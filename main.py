@@ -23,6 +23,9 @@ class Board():
         if x >= 0 and y >= 0 and x < self.x_width and y < self.y_heigth:
             return self.current[y][x]
         return None#eksisterer ikke
+
+    def Clone(self, board):
+        self.current = board.current
     
     def swapSquare(self, x1, y1, x2, y2):
         #directly swap p1, p2
@@ -80,10 +83,20 @@ class Board():
                         matches+=temp
                     matchnumber = 1      
 
-        if len(matches) > 0:#returnerer MATCHES TODO: koble temp instanser til matches 
+        if len(matches) > 0:
             return matches
         return None
     
+    def ClearALL(self):
+        for x in range(self.x_width):
+            for y in range(self.y_width):
+                self.SetSquare(x, y, empty)
+
+    def Clear(self, list):
+        if list != None:
+            for node in list:
+                self.SetSquare(node[0], node[1], empty)
+
     def gravity(self):
         #move elements down until there are no empty spaces
         #generate new items at index 0
@@ -100,7 +113,7 @@ class Board():
                     self.swapSquare(x, y_r, x, y_r-1)
                 elif symbol == empty and symbol_over == None:
                     self.randomizeSquare(x, y_r)
-        if do_over:#this is dumb, TODO: consider removing complexity layer
+        if do_over:#denne rekursjonen er utrolig dum TODO: consider removing complexity layer
             self.gravity()
 
     def print(self):
@@ -117,23 +130,43 @@ class Game():
         self.points = 0
         self.myboard = Board(5,5,default_symbols,2005)
         self.myboard.print()
+        matches = self.myboard.Match3()
+        self.myboard.Clear(matches)
+        while matches != None:
+            self.myboard.gravity()
+            matches = self.myboard.Match3()
+            self.myboard.Clear(matches) 
+
+        self.myboard.print()
+    
         while (self.points < pointCondition):
-            command = input("Command -> ")
-            if command == 'n' or command == "exit" or command == "end" or command == "quit":
-                break
-            elif command == "check":
-                print(self.myboard.CheckSquare(int(input("x -> ")),int(input("y -> "))))
-            elif command == "gravity":
-                self.myboard.gravity()
-                self.myboard.print()
-            elif command == "set":
-                self.myboard.SetSquare(int(input("x -> ")),int(input("y -> ")),input("val -> "))
-                self.myboard.print()
-            elif command == "match":
-                print(self.myboard.Match3())
-            elif command == "scramble":
-                self.myboard = Board(5,5,default_symbols,2005)
-                self.myboard.print()
+            #swap input
+            x1 = int(input("X1 -> "))
+            y1 = int(input("Y1 -> "))
+            x2 = int(input("X2 -> "))
+            y2 = int(input("Y2 -> "))
+            if self.myboard.CheckSquare(x1, y1) != None or self.myboard.CheckSquare(x2, y2) != None:
+                if abs(x2 - x1) == 1 or abs(y2 - y1) == 1:#sjekk at de er ved siden
+                    #Check if move is valid
+                    cloneBoard = self.myboard
+                    cloneBoard.swapSquare(x1, y1, x2, y2)
+                    cloneBoard.print()
+                    if cloneBoard.Match3() != None:
+                        print("Commencing main")
+                        self.myboard.Clone(cloneBoard)
+                        matches = self.myboard.Match3()
+                        while matches != None:
+                            self.myboard.print()
+                            self.myboard.Clear(matches)
+                            self.myboard.gravity()
+                            matches = self.myboard.Match3()
+                else:
+                    print("Invalid move!")
+            else:
+                print("Invalid move!")
+
+            self.myboard.print()
+    
 
 newgame = Game(10)
 
