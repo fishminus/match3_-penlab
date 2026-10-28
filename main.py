@@ -43,15 +43,47 @@ class Board():
 
     def Match3(self):
         matches = []
-        for y in range(self.y_height):  
+        for y in range(self.y_heigth):#Horizontal matches through the ROW
+            matchnumber = 1
+            temp = []
             for x in range(self.x_width):
                 symbol = self.CheckSquare(x, y)#get current
-                matchnumber = 1
-                temp = [[x, y]]
                 x_r = x + 1
-                while x_r < self.x_width:
-                    pass
-                
+
+                if matchnumber == 1:#start
+                    temp = [[x, y]]
+
+                if symbol == self.CheckSquare(x_r, y):
+                    matchnumber += 1
+                    temp.append([x_r, y])
+                else:
+                    if matchnumber >= 3:
+                        print("MatchH found", temp)
+                        matches+=temp
+                    matchnumber = 1
+        for x in range(self.x_width):#Horizontal matches through the COLLUM
+            matchnumber = 1
+            temp = []
+            for y in range(self.y_heigth):
+                symbol = self.CheckSquare(x, y)#get current
+                y_r = y + 1
+
+                if matchnumber == 1:#start
+                    temp = [[x, y]]
+
+                if symbol == self.CheckSquare(x, y_r):
+                    matchnumber += 1
+                    temp.append([x, y_r])
+                else:
+                    if matchnumber >= 3:
+                        print("MatchV found", temp)
+                        matches+=temp
+                    matchnumber = 1      
+
+        if len(matches) > 0:#returnerer MATCHES TODO: koble temp instanser til matches 
+            return matches
+        return None
+    
     def gravity(self):
         #move elements down until there are no empty spaces
         #generate new items at index 0
@@ -68,7 +100,7 @@ class Board():
                     self.swapSquare(x, y_r, x, y_r-1)
                 elif symbol == empty and symbol_over == None:
                     self.randomizeSquare(x, y_r)
-        if do_over:
+        if do_over:#this is dumb, TODO: consider removing complexity layer
             self.gravity()
 
     def print(self):
@@ -98,7 +130,10 @@ class Game():
                 self.myboard.SetSquare(int(input("x -> ")),int(input("y -> ")),input("val -> "))
                 self.myboard.print()
             elif command == "match":
-                self.myboard.Match3()
+                print(self.myboard.Match3())
+            elif command == "scramble":
+                self.myboard = Board(5,5,default_symbols,2005)
+                self.myboard.print()
 
 newgame = Game(10)
 
