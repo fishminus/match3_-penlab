@@ -58,9 +58,10 @@ class Board():
                     temp.append([x_r, y])
                 else:
                     if matchnumber >= 3:
-                        print("MatchH found", temp)
+                        #print("MatchH found", temp)
                         matches+=temp
                     matchnumber = 1
+        
         for x in range(self.x_width):#Horizontal matches through the COLLUM
             matchnumber = 1
             temp = []
@@ -76,7 +77,7 @@ class Board():
                     temp.append([x, y_r])
                 else:
                     if matchnumber >= 3:
-                        print("MatchV found", temp)
+                        #print("MatchV found", temp)
                         matches+=temp
                     matchnumber = 1      
 
@@ -123,17 +124,16 @@ class Board():
 
 
 class Game():
-    def __init__(self, pointCondition, size):
+    def __init__(self, pointCondition, turnCondition, size):
         self.pointCondition = pointCondition
+        self.turnCondition = turnCondition
         self.points = 0
-        self.myboard = Board(size,size,default_symbols,2005)
-        self.myboard.print()
-        matches = self.myboard.Match3()
-        self.myboard.Clear(matches)
-        while matches != None:
-            self.myboard.gravity()
-            matches = self.myboard.Match3()
-            self.myboard.Clear(matches) 
-
-        self.myboard.print()
+        self.turn = 0
+        self.board = Board(size,size,default_symbols,2005)
+        matches = self.board.Match3()
+        self.board.Clear(matches)
+        while matches != None:#no points while loading the board
+            self.board.gravity()
+            matches = self.board.Match3()
+            self.board.Clear(matches)
     

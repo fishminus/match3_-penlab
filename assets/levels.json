@@ -1,0 +1,13 @@
+{
+  "levels": [
+    { "name": "Warm-up",         "size": 5, "max_turns": 20, "score": 2000  },
+    { "name": "Easy Does It",    "size": 5, "max_turns": 18, "score": 600  },
+    { "name": "Getting Warmer",  "size": 6, "max_turns": 20, "score": 900  },
+    { "name": "Picking Up",      "size": 6, "max_turns": 18, "score": 1000 },
+    { "name": "Tight Spot",      "size": 6, "max_turns": 15, "score": 950  },
+    { "name": "Wide Open",       "size": 7, "max_turns": 20, "score": 1400 },
+    { "name": "Under Pressure",  "size": 7, "max_turns": 16, "score": 1300 },
+    { "name": "Big Board",       "size": 8, "max_turns": 18, "score": 1500 },
+    { "name": "Final Exam",      "size": 8, "max_turns": 14, "score": 1400 }
+  ]
+}
