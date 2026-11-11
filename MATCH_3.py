@@ -4,10 +4,11 @@ import sys
 
 from uib_inf100_graphics.event_app import run_app
 from uib_inf100_graphics.helpers import load_image, image_in_box
+from python.uib_inf100_music import load_sound_effect, load_looping_sound, stop_all_sounds
 
 import python.match3_logic as match3
 
-imagelink = {
+imagelink = {#bildelenker for symbol
     'P': "assets/Python.png",
     'X': "assets/x.png",
     'M': "assets/M.jpg",
@@ -16,6 +17,7 @@ imagelink = {
 
 # Her er alle initialvariablene
 LEVELS_FILE  = "assets/levels.json"
+SOUNDS_FOLDER= "sounds/"
 MIN_SIZE     = 4
 MAX_SIZE     = 8
 TIMER_DELAY  = 16      # ms for hver oppdatering
@@ -47,7 +49,6 @@ DEFAULT_LEVELS = [
 ]
 
 
-# ------------------------------------------------------------ level loading --
 def load_levels(path=LEVELS_FILE):
     #laster baner fra json fil og sjekker integriteten
     try:
@@ -56,57 +57,53 @@ def load_levels(path=LEVELS_FILE):
 
         raw = data["levels"] if isinstance(data, dict) else data
         levels = []
-        for i, lv in enumerate(raw):
+        for i, lv in enumerate(raw):#vi får en liste over levels og bruker index for å hente {leveltall} + 1 fordi level 0 ikke eksisterer
             levels.append({
                 "name": str(lv.get("name", f"Level {i + 1}")),
                 "size": max(MIN_SIZE, min(MAX_SIZE, int(lv["size"]))),
                 "max_turns": max(1, int(lv["max_turns"])),
                 "score": max(1, int(lv["score"])),
-            })
+            })#
         if levels:
             return levels
     except (OSError, ValueError, KeyError, TypeError, AttributeError) as e:
-        print(f"Could not load {path} ({e!r}); using built-in levels.")
-    return list(DEFAULT_LEVELS)
+        print(f"Could not load {path} ({e!r}); using built-in levels.")#for alle error så bruker vi bare innebydge
+    return list(DEFAULT_LEVELS)#returnerer liste for lettere integrasjon
 
-
-# ------------------------------------------------------------------ sprite --
 class Sprite:
-    """Visual tile. Positions are in *cell units*, so (2.5, 1.0) is half way
-    between column 2 and 3 on row 1. The logic board stays the source of truth;
-    sprites only decide where things are drawn."""
+    #hovedbrettet fra match3_logic beholdes som sannt stadie, men disse
+    #sprite elementene bruker floats for posisjoner for å animere jevnt
+    #de er altså bare visualiseringer av brettet, ikke spilllogikk
 
     def __init__(self, symbol, x, y):
         self.symbol = symbol
         self.x, self.y = float(x), float(y)
-        self.tx, self.ty = float(x), float(y)   # where it is heading
+        self.tx, self.ty = float(x), float(y)#tx og ty er distasjoner, nå er de lik self x og y
         self.vy = 0.0
-        self.falling = False                    # True -> gravity physics
+        self.falling = False#når True animerer vi fallet
         self.scale = 1.0
 
-    def settled(self):
+    def settled(self):#sjekker om posisjonen er lik destinasjon, aka. "er vi framme"
         return self.x == self.tx and self.y == self.ty
 
-    def step(self):
-        self.x += (self.tx - self.x) * EASE
+    def step(self):#dette er bevegelses funksjonen med easing, 
+        self.x += (self.tx - self.x) * EASE#samme logikk for y, men brukes ikke under gravity
         if abs(self.tx - self.x) < 0.002:
             self.x = self.tx
 
-        if self.falling and self.ty > self.y:
-            self.vy += GRAVITY
-            self.y = min(self.ty, self.y + self.vy)
+        if self.falling and self.ty > self.y:#skal objektet falle, og er vi over destinasjonen
+            self.vy += GRAVITY#velocity definert fra gravity variablet
+            self.y = min(self.ty, self.y + self.vy)#legger på velocity, med detinasjon som maks (min i dette tilfellet fordi y=0 er fra toppen)
             if self.y == self.ty:
                 self.vy = 0.0
-                self.falling = False
-        else:
+                self.falling = False#når destinasjonen er nådd trenger vi ikke å falle lenger
+        else:#håndterer resten av fallet hvis vi havner forbi av en eller annen grunn
             self.falling = False
             self.vy = 0.0
             self.y += (self.ty - self.y) * EASE
-            if abs(self.ty - self.y) < 0.002:
+            if abs(self.ty - self.y) < 0.002:#sørger for at posisjonen låser seg selv til destinasjonen når nærme nok
                 self.y = self.ty
 
-
-# ------------------------------------------------------------------ layout --
 def layout(app):
     n = app.game.board.x_width
     avail_h = app.height - HUD_HEIGHT - 10
@@ -115,25 +112,24 @@ def layout(app):
     top = HUD_HEIGHT
     return left, top, size
 
-
 def cell_at(app, px, py):
-    """Pixel -> (x, y) cell (col, row), or None if outside the board."""
+    #Sjekker om det er et element på px, py fra gameboard ved bruk av "size" (fra sprites)
     left, top, size = layout(app)
     x = int((px - left) // size)
     y = int((py - top) // size)
-    if app.game.board.CheckSquare(x, y) is None:
+    if app.game.board.CheckSquare(x, y) is None:#game.board returnerer None i steder utenfor brettet
         return None
-    return (x, y)
+    return (x, y)#trenger ikke else her på grunn av return None
 
 
-# ------------------------------------------------------------------ buttons --
+#Enkel funksjon for å beskrive dimensjonen av forskjellige firkant knapper med bid (button id)
 def button(bid, label, x0, y0, x1, y1, sub=None):
     return {"id": bid, "label": label, "sub": sub,
             "x0": x0, "y0": y0, "x1": x1, "y1": y1}
 
 
 def stack(app, items, top, w=240, h=44, gap=14):
-    """Vertically stacked, horizontally centred buttons. items = [(id, label)]"""
+    #funksjon for knapper i stack, out er en liste med knapper som et vertikalt stablet og horisontal sentrert
     x0 = (app.width - w) / 2
     out = []
     for i, (bid, label) in enumerate(items):
@@ -143,25 +139,24 @@ def stack(app, items, top, w=240, h=44, gap=14):
 
 
 def screen_buttons(app):
-    """Buttons for the current screen. Recomputed on demand, so resizing and
-    hit-testing always agree with what is drawn."""
+    #funksjon som tegner knapper på skjermen, s er screen-state av spillet, vi tegner forskjellige knapper i forskjellige stadier
     s, w, h = app.screen, app.width, app.height
 
-    if s == 'menu':
+    if s == 'menu':#stack av knapper med definert top for meny
         return stack(app, [('play', 'Play'), ('settings', 'Settings'),
                            ('exit', 'Exit')], top=150)
 
-    if s == 'settings':
+    if s == 'settings':#Tuple til knappene definerer navn og funksjon
         return stack(app, [('back_menu', 'Back')], top=h - 80)
 
     if s == 'levels':
-        cols, gap, bw = 3, 14, 190
+        cols, gap, bw = 3, 14, 190#collums, margin, og knapp width
         rows = math.ceil(len(app.levels) / cols)
         top0, bottom = 80, h - 80
         bh = max(36, min(64, (bottom - top0 - (rows - 1) * gap) / rows))
         left0 = (w - (cols * bw + (cols - 1) * gap)) / 2
         out = []
-        for i, lv in enumerate(app.levels):
+        for i, lv in enumerate(app.levels):#lager knapp for hvert level i spillet og lager rad og 
             r, c = divmod(i, cols)
             x0 = left0 + c * (bw + gap)
             y0 = top0 + r * (bh + gap)
@@ -171,10 +166,10 @@ def screen_buttons(app):
         out += stack(app, [('back_menu', 'Back')], top=h - 62, h=40)
         return out
 
-    if s == 'game':
+    if s == 'game':#bare meny knapp mens spillet spiller
         return [button('menu', 'Menu', 10, 8, 80, 32)]
 
-    if s == 'win':
+    if s == 'win':#snareveier til neste level eller til banevelger
         items = []
         if app.level_index + 1 < len(app.levels):
             items.append(('next', 'Next level'))
@@ -187,14 +182,14 @@ def screen_buttons(app):
     return []
 
 
-def button_at(app, px, py):
+def button_at(app, px, py):#sjekker gjeldende knapper og sjekker om musen er innenfor bounds
     for b in screen_buttons(app):
         if b['x0'] <= px <= b['x1'] and b['y0'] <= py <= b['y1']:
             return b
     return None
 
 
-def on_button(app, bid):
+def on_button(app, bid):#her bruker vi funksjonene definert i button id for å aktivere en funksjon
     if bid == 'play' or bid == 'levels':
         app.screen = 'levels'
     elif bid == 'settings':
@@ -212,17 +207,14 @@ def on_button(app, bid):
     app.hover = None
 
 
-def quit_app(app):
+def quit_app(app):#avslutter applikasjonen
     try:
         app.canvas_ref.winfo_toplevel().destroy()   # closes the Tk window
     except Exception:
         sys.exit()
 
-
-# ------------------------------------------------------------- game helpers --
 def try_swap(board, a, b):
-    """Swap a<->b on the logic board. Keep it if it creates a match, otherwise
-    swap back. Returns True if the move was valid."""
+    #funksjon tester swap og returnerer swapen hvis det ikke er matches funnet
     (x1, y1), (x2, y2) = a, b
     board.swapSquare(x1, y1, x2, y2)
     if board.Match3() is not None:
@@ -231,19 +223,19 @@ def try_swap(board, a, b):
     return False
 
 
-def all_sprites(app):
+def all_sprites(app):#returnerer hver sprite i app.sprites listen
     for row in app.sprites:
         for s in row:
             if s is not None:
-                yield s
+                yield s#bruker yield så vi kan håndetere et element om gangen så vi slipper å håndetere listen direkte
 
 
 def all_settled(app):
-    return all(s.settled() for s in all_sprites(app))
+    return all(s.settled() for s in all_sprites(app))#sjekker om all() sprites er .settled()
 
 
 def snap_home(app):
-    """Send every sprite to the cell it occupies in the grid."""
+    #funksjonen tvinger alle sprites til destinasjonen sin
     for y, row in enumerate(app.sprites):
         for x, s in enumerate(row):
             if s is not None:
@@ -251,7 +243,7 @@ def snap_home(app):
 
 
 def start_level(app, index):
-    """(Re)start a level: new game, fresh counters, board drops in."""
+    #når vi åpner en bane definerer vi alle relevante app variablene på nytt, inkl Match3.Game
     lv = app.levels[index]
     app.level_index = index
     # If your Game now takes turns too, pass lv["max_turns"] here as well.
@@ -277,12 +269,12 @@ def start_level(app, index):
             s.falling = True
             row.append(s)
         app.sprites.append(row)
-    app.phase = 'fall'
+    app.phase = 'fall'#vi vill at alle sprites faller på plass på starten
     app.screen = 'game'
 
 
 def check_end(app):
-    """Called when the board has fully settled after a move."""
+    #etter at sprites er på plass så sjekker vi win condtition eller tap, el. så forsetter vi i idle
     if app.game.points >= app.game.pointCondition:
         app.result = 'win'
     elif app.turns_left <= 0:
@@ -352,6 +344,7 @@ def begin_fall(app):
 
 # -------------------------------------------------------------------- app ---
 def app_started(app):
+    app.firsthover = False
     app.images = {sym: load_image(path) for sym, path in imagelink.items()}
     app.timer_delay = TIMER_DELAY
     app.levels = load_levels()
@@ -359,6 +352,9 @@ def app_started(app):
     app.screen = 'menu'      # menu | levels | settings | game | win | lose
     app.hover = None
     app.canvas_ref = None
+    app.sound_effect = load_sound_effect('sounds/swap_01.wav')
+    app.select_sound_effect = load_sound_effect('sounds/tile_land_01.wav')
+
 
 
 def timer_fired(app):
@@ -396,9 +392,16 @@ def timer_fired(app):
 def mouse_moved(app, event):
     b = button_at(app, event.x, event.y)
     app.hover = b['id'] if b else None
+    if app.hover and not app.firsthover:
+        app.sound_effect.play()
+        app.firsthover = True
+    elif app.hover == None:
+        app.firsthover = False
+
 
 
 def mouse_pressed(app, event):
+    app.select_sound_effect.play()
     b = button_at(app, event.x, event.y)
     if b:
         on_button(app, b['id'])
