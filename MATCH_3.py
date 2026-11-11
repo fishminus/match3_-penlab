@@ -14,19 +14,21 @@ imagelink = {
     "O": "assets/O.png",
 }
 
-# ---------------------------------------------------------------- tuning ---
+# Her er alle initialvariablene
 LEVELS_FILE  = "assets/levels.json"
 MIN_SIZE     = 4
 MAX_SIZE     = 8
-TIMER_DELAY  = 16      # ms per frame (~60 fps)
-EASE         = 0.30    # share of the remaining distance covered per frame
-GRAVITY      = 0.035   # cells / frame^2 for falling tiles
-CLEAR_FRAMES = 10      # how long matched tiles take to shrink away
-COMMIT       = 0.40    # drag at least this far (in cells) to commit a swap
-END_DELAY    = 35      # frames to look at the final board before win/lose screen
+TIMER_DELAY  = 16      # ms for hver oppdatering
+EASE         = 0.30    # multiplikasjonsverdi for easing (slik at klossene beveger seg progressivt tregere mot destinasjon)
+GRAVITY      = 0.035   # fart på gravity-kalkulasjon
+CLEAR_FRAMES = 10      # mengden oppdatering brukt på "shrink" animasjoner
+COMMIT       = 0.40    # margin på drag-swap funksjon før man inngår en aksjon
+END_DELAY    = 35      # mengden oppdatering før man går inn i win/loss screen
 HUD_HEIGHT   = 40
 
+#FARGER
 BG           = "#1e1e2e"
+PROGRESS     = "#1e1e2e"
 CELL_A       = "#2a2a3d"
 CELL_B       = "#313147"
 BTN          = "#44446a"
@@ -35,10 +37,10 @@ TEXT         = "#ffffff"
 SUBTEXT      = "#b4b4d0"
 GOOD         = "#6fdc8c"
 BAD          = "#ff6b6b"
-WARN         = "#ffb454"
+WARN         = "#f09f35"
 
-# Used if levels.json is missing or broken, so the game always starts.
-DEFAULT_LEVELS = [
+# Hvis level.json ikke finnes bruker vi denne isteden
+DEFAULT_LEVELS = [ 
     {"name": "Warm-up", "size": 5, "max_turns": 20, "score": 400},
     {"name": "Easy Does It", "size": 5, "max_turns": 18, "score": 600},
     {"name": "Getting Warmer", "size": 6, "max_turns": 20, "score": 900},
@@ -47,11 +49,11 @@ DEFAULT_LEVELS = [
 
 # ------------------------------------------------------------ level loading --
 def load_levels(path=LEVELS_FILE):
-    """Read levels from JSON. Accepts {"levels": [...]} or a bare list.
-    Every field is validated/clamped so a typo can't crash the game."""
+    #laster baner fra json fil og sjekker integriteten
     try:
-        with open(path, encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:#åpner med with open
             data = json.load(f)
+
         raw = data["levels"] if isinstance(data, dict) else data
         levels = []
         for i, lv in enumerate(raw):
@@ -521,7 +523,7 @@ def draw_tile(app, canvas, s, lift=False):
 def draw_game(app, canvas):
     left, top, size = layout(app)
     n = app.game.board.x_width
-
+    
     for y in range(n):
         for x in range(n):
             canvas.create_rectangle(
@@ -546,6 +548,7 @@ def draw_game(app, canvas):
     canvas.create_rectangle(0, 0, app.width, top, fill=BG, outline="")
 
     # HUD
+    canvas.create_rectangle(0, 0, (app.game.points/app.game.pointCondition) * app.width, top, fill=PROGRESS, outline="")#scoremeter
     score = f"Score: {app.game.points} / {app.game.pointCondition}"
     if app.combo > 1:
         score += f"   x{app.combo} combo!"
@@ -607,7 +610,5 @@ def redraw_all(app, canvas):
         draw_end_screen(app, canvas, False)
     for b in screen_buttons(app):
         draw_button(app, canvas, b)
-    
-
 
 run_app(width=900, height=600)

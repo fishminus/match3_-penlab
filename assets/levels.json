@@ -8,6 +8,6 @@
     { "name": "Wide Open",       "size": 7, "max_turns": 20, "score": 1400 },
     { "name": "Under Pressure",  "size": 7, "max_turns": 16, "score": 1300 },
     { "name": "Big Board",       "size": 8, "max_turns": 18, "score": 1500 },
-    { "name": "Final Exam",      "size": 8, "max_turns": 14, "score": 1400 }
+    { "name": "Final Exam",      "size": 8, "max_turns": 12, "score": 18000 }
   ]
 }
