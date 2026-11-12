@@ -10,13 +10,14 @@ import python.match3_logic as match3
 
 imagelink = {#bildelenker for symbol
     'P': "assets/Python.png",
-    'X': "assets/x.png",
+    'X': "assets/x.jpeg",
     'M': "assets/M.jpg",
     "O": "assets/O.png",
 }
 
 # Her er alle initialvariablene
-LEVELS_FILE  = "assets/levels.json"
+LEVELS_FILE  = "assets/levels.json"#lagring skjer også her
+HIGHSCORES_ENABLED = False #må sjekke om vi har tilgang til json først
 SOUNDS_FOLDER= "sounds/"
 MIN_SIZE     = 4
 MAX_SIZE     = 8
@@ -62,9 +63,11 @@ def load_levels(path=LEVELS_FILE):
                 "name": str(lv.get("name", f"Level {i + 1}")),
                 "size": max(MIN_SIZE, min(MAX_SIZE, int(lv["size"]))),
                 "max_turns": max(1, int(lv["max_turns"])),
-                "score": max(1, int(lv["score"])),
-            })#
-        if levels:
+                "score": max(1, int(lv["score"]))
+                #"highscore": (max(0, int(data["highscores"][i])))
+            })
+        if levels:            
+            HIGHSCORES_ENABLED = True
             return levels
     except (OSError, ValueError, KeyError, TypeError, AttributeError) as e:
         print(f"Could not load {path} ({e!r}); using built-in levels.")#for alle error så bruker vi bare innebydge
